@@ -26,6 +26,8 @@
   # - ./docker:/app/docker
   # - superset_home:/app/superset_home
 
+version: '3.7'
+
 volumes:
   superset_home:
     external: false
@@ -256,5 +258,6 @@ services:
     build: 
       dockerfile: ./ubuntu.Dockerfile
     restart: always
+    command: sleep infinity
     ports :
       - "8089:8089"
