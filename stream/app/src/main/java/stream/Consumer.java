@@ -48,39 +48,40 @@ public class Consumer {
         consumerProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         consumerProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class.getName());
         
-        KafkaConsumer<String, JsonNode> consumer = new KafkaConsumer<>(consumerProps);
-        //consumer.seekToBeginning(consumer.assignment());
-        consumer.subscribe(Collections.singletonList("dbserver1.seoulDB.busStation"));
+        try (KafkaConsumer<String, JsonNode> consumer = new KafkaConsumer<>(consumerProps)) {
+        
+            consumer.subscribe(Collections.singletonList("dbserver1.seoulDB.busStation"));
+            consumer.seekToBeginning(consumer.assignment());
+            Properties producerProps = new Properties();
+            producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19094,localhost:29094,localhost:39094");
+            producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+            producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class.getName());
 
-        Properties producerProps = new Properties();
-        producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19094,localhost:29094,localhost:39094");
-        producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class.getName());
-
-        KafkaProducer<String, JsonNode> producer = new KafkaProducer<>(producerProps);
-
-        // 레코드를 가져오는 루프
-        while (true) {
-        // input-topic에서 레코드를 가져옴
-        ConsumerRecords<String, JsonNode> records = consumer.poll (Duration.ofMillis (100));
-        for (ConsumerRecord<String, JsonNode> record : records) {
-            // 레코드의 값에서 좌표를 가져옴
-            String xcode = record.value ().get ("payload").get ("after").get ("XCODE").toString();
-            xcode = xcode.substring(1, xcode.length() - 1);
-            System.out.println("xcode : "+xcode);
-            String ycode = (record.value ().get ("payload").get ("after").get ("YCODE")).toString ();
-            ycode = ycode.substring(1, ycode.length() - 1);
-            System.out.println("xcode After : "+xcode);
-            
-            // 좌표를 경위도로 변환
-            String addr = coordToAddr(xcode, ycode);
-            System.out.println("addr : "+addr);
-            // 변환된 경위도를 레코드에 추가
-            ((ObjectNode) record.value ().get ("payload").get ("after")).put ("addr", addr);
-            // 레코드를 outputTest으로 전송
-            producer.send (new ProducerRecord<> ("output-topic" ,record.value()));
+            try (KafkaProducer<String, JsonNode> producer = new KafkaProducer<>(producerProps)) {
+                // 레코드를 가져오는 루프
+                while (true) {
+                // input-topic에서 레코드를 가져옴After 
+                ConsumerRecords<String, JsonNode> records = consumer.poll (Duration.ofMillis (100));
+                for (ConsumerRecord<String, JsonNode> record : records) {
+                    // 레코드의 값에서 좌표를 가져옴
+                    String xcode = record.value ().get ("payload").get ("after").get ("XCODE").toString();
+                    xcode = xcode.substring(1, xcode.length() - 1);
+                   
+                    String ycode = (record.value ().get ("payload").get ("after").get ("YCODE")).toString ();
+                    ycode = ycode.substring(1, ycode.length() - 1);
+                    System.out.println("xcode After : "+xcode);
+                    
+                    // 좌표를 경위도로 변환
+                    String addr = coordToAddr(xcode, ycode);
+                    System.out.println("addr : "+addr);
+                    // 변환된 경위도를 레코드에 추가
+                    ((ObjectNode) record.value ().get ("payload").get ("after")).put ("addr", addr);
+                    // 레코드를 outputTest으로 전송
+                    producer.send (new ProducerRecord<> ("output-topic" ,record.value()));
+                    }
+                    
+                }
             }
-            
         }
    
     }
@@ -165,20 +166,10 @@ private static String getRegionAddress(String jsonString) {
         if (size > 0) {
             JsonNode documentsNode = rootNode.get("documents");
             JsonNode subJobj = documentsNode.get(0);
-            JsonNode roadAddress = subJobj.get("road_address");
+            System.out.println("subJobj : " + subJobj);
+            JsonNode subsubJobj = subJobj.get("address");
 
-            if (roadAddress == null) {
-                JsonNode subsubJobj = subJobj.get("address");
-                value = subsubJobj.get("address_name").asText();
-            } else {
-                value = roadAddress.get("address_name").asText();
-            }
-
-            if (value.equals("") || value == null) {
-                subJobj = documentsNode.get(1);
-                subJobj = subJobj.get("address");
-                value = subJobj.get("address_name").asText();
-            }
+            value = subsubJobj.get("address_name").asText();
         }
     } catch (Exception e) {
         e.printStackTrace();

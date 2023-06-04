@@ -77,40 +77,11 @@ public class XyAllocator {
              	response.append(inputLine); 
              } 
          }
-         
+  
          return response.toString();
     }
     
-     /**
-      * JSON형태의 String 데이터에서 주소값(address_name)만 받아오기
-      */
-	// private static String getRegionAddress(String jsonString) {
-    //     String value = "";
-    //     JSONObject jObj = (JSONObject) JSONValue(jsonString);
-    //     JSONObject meta = (JSONObject) jObj.get("meta");
-    //     long size = (long) meta.get("total_count");
-        
-    //     if(size>0){
-    //         JSONArray jArray = (JSONArray) jObj.get("documents");
-    //         JSONObject subJobj = (JSONObject) jArray.get(0);
-    //         JSONObject roadAddress =  (JSONObject) subJobj.get("road_address");
-            
-    //         if(roadAddress == null){
-    //             JSONObject subsubJobj = (JSONObject) subJobj.get("address");
-    //             value = (String) subsubJobj.get("address_name");
-    //         }else{
-    //             value = (String) roadAddress.get("address_name");
-    //         }
-            
-    //         if(value.equals("") || value==null){
-    //             subJobj = (JSONObject) jArray.get(1);
-    //             subJobj = (JSONObject) subJobj.get("address");
-    //             value =(String) subJobj.get("address_name");    
-    //         }
-    //     }
-        
-    //     return value;
-    // }
+ 
 
 private static String getRegionAddress(String jsonString) {
     String value = "";
@@ -120,26 +91,33 @@ private static String getRegionAddress(String jsonString) {
         JsonNode rootNode = objectMapper.readTree(jsonString);
 
         JsonNode metaNode = rootNode.get("meta");
+        System.out.println("metaNode : " + metaNode);
         long size = metaNode.get("total_count").asLong();
 
         if (size > 0) {
             JsonNode documentsNode = rootNode.get("documents");
+            // System.out.println("documentsNode : " + documentsNode);
             JsonNode subJobj = documentsNode.get(0);
-            JsonNode roadAddress = subJobj.get("road_address");
+            System.out.println("subJobj : " + subJobj);
+            JsonNode subsubJobj = subJobj.get("address");
 
-            if (roadAddress == null) {
-                JsonNode subsubJobj = subJobj.get("address");
-                value = subsubJobj.get("address_name").asText();
-            } else {
-                value = roadAddress.get("address_name").asText();
-            }
+            value = subsubJobj.get("address_name").asText();
+            // JsonNode roadAddress = subJobj.get("road_address");
 
-            if (value.equals("") || value == null) {
-                subJobj = documentsNode.get(1);
-                subJobj = subJobj.get("address");
-                value = subJobj.get("address_name").asText();
+            // if (roadAddress == null) {
+            //     JsonNode subsubJobj = subJobj.get("address");
+            //     value = subsubJobj.get("address_name").asText();
+            // } else {
+            //     value = roadAddress.get("address_name").asText();
+            // }
+
+            // if (value.equals("") || value == null) {
+            //     subJobj = documentsNode.get(1);
+            //     subJobj = subJobj.get("address");
+            //     value = subJobj.get("address_name").asText();
             }
-        }
+            System.out.println("value : " + value );
+        
     } catch (Exception e) {
         e.printStackTrace();
     }
