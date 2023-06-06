@@ -93,7 +93,7 @@ public class Consumer {
 //   dong VARCHAR(20)
 // )
                     
-                    producer.send (new ProducerRecord<> ("busStation" ,record.value()));
+                    producer.send (new ProducerRecord<> ("modifiedBusStation" ,record.value()));
                     }
                     
                 }

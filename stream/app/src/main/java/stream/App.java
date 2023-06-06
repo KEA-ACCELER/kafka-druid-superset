@@ -70,9 +70,7 @@ public class App {
         //MNTN_TYP_CD VARCHAR(20), 교통수단 타입 코드
         // MNTN_TYP_NM VARCHAR(20), 교통수단 타입 명
         KStream<String, JsonNode> modifiedStream = rawRideStream.mapValues(value -> {
-            System.out.println("value : "+value.toString());
-            System.out.println("MNTM_TYP_CD : "+value.get("payload").get("after").get("MNTN_TYP_CD").toString());
-            System.out.println("MNTM_TYP_NM : "+value.get("payload").get("after").get("MNTN_TYP_NM").toString());
+            System.out.println("MNTM_TYP_NM : "+value.get("payload").get("after").get("MNTN_TYP_CD").toString());
             
             
             ObjectNode modifiedValue= new ObjectNode(new ObjectMapper().getNodeFactory());
@@ -82,58 +80,23 @@ public class App {
             
             return modifiedValue;
         });
+        modifiedStream.to("busType", Produced.with(Serdes.String(), jsonNodeSerde));
+/*
+ *   BUS_ROUTE_NO VARCHAR(20), 노선 번호
+    BUS_ROUTE_NM VARCHAR(60), 노선 이름 ex, 101(하계동~용산구청)
+ */
+        KStream<String, JsonNode> busRouteStream = rawRideStream.mapValues(value -> {
+            System.out.println("BUS_ROUTE_NM : "+value.get("payload").get("after").get("BUS_ROUTE_NM").toString());
+            
+            
+            ObjectNode modifiedValue= new ObjectNode(new ObjectMapper().getNodeFactory());
+            modifiedValue.put("BUS_ROUTE_NO", value.get("payload").get("after").get("BUS_ROUTE_NO").toString());
+            modifiedValue.put("BUS_ROUTE_NM", value.get("payload").get("after").get("BUS_ROUTE_NM").toString());
+            return modifiedValue;
+        });
+        busRouteStream.to("busRoute", Produced.with(Serdes.String(), jsonNodeSerde));
 
-        /*
-         *     MIDNIGHT_RIDE_NUM INTEGER,
-    MIDNIGHT_ALIGHT_NUM INTEGER,
-    ONE_RIDE_NUM INTEGER,
-    ONE_ALIGHT_NUM INTEGER,
-    TWO_RIDE_NUM INTEGER,
-    TWO_ALIGHT_NUM INTEGER,
-    THREE_RIDE_NUM INTEGER,
-    THREE_ALIGHT_NUM INTEGER,
-    FOUR_RIDE_NUM INTEGER,
-    FOUR_ALIGHT_NUM INTEGER,
-    FIVE_RIDE_NUM INTEGER,
-    FIVE_ALIGHT_NUM INTEGER,
-    SIX_RIDE_NUM INTEGER,
-    SIX_ALIGHT_NUM INTEGER,
-    SEVEN_RIDE_NUM INTEGER,
-    SEVEN_ALIGHT_NUM INTEGER,
-    EIGHT_RIDE_NUM INTEGER,
-    EIGHT_ALIGHT_NUM INTEGER,
-    NINE_RIDE_NUM INTEGER,
-    NINE_ALIGHT_NUM INTEGER,
-    TEN_RIDE_NUM INTEGER,
-    TEN_ALIGHT_NUM INTEGER,
-    ELEVEN_RIDE_NUM INTEGER,
-    ELEVEN_ALIGHT_NUM INTEGER,
-    TWELVE_RIDE_NUM INTEGER,
-    TWELVE_ALIGHT_NUM INTEGER,
-    
-    THIRTEEN_RIDE_NUM INTEGER,
-    THIRTEEN_ALIGHT_NUM INTEGER,
-    FOURTEEN_RIDE_NUM INTEGER,
-    FOURTEEN_ALIGHT_NUM INTEGER,
-    FIFTEEN_RIDE_NUM INTEGER,
-    FIFTEEN_ALIGHT_NUM INTEGER,
-    SIXTEEN_RIDE_NUM INTEGER,
-    SIXTEEN_ALIGHT_NUM INTEGER,
-    SEVENTEEN_RIDE_NUM INTEGER,
-    SEVENTEEN_ALIGHT_NUM INTEGER,
-    EIGHTEEN_RIDE_NUM INTEGER,
-    EIGHTEEN_ALIGHT_NUM INTEGER,
-    NINETEEN_RIDE_NUM INTEGER,
-    NINETEEN_ALIGHT_NUM INTEGER,
-    TWENTY_RIDE_NUM INTEGER,
-    TWENTY_ALIGHT_NUM INTEGER,
-    TWENTY_ONE_RIDE_NUM INTEGER,
-    TWENTY_ONE_ALIGHT_NUM INTEGER,
-    TWENTY_TWO_RIDE_NUM INTEGER,
-    TWENTY_TWO_ALIGHT_NUM INTEGER,
-    TWENTY_THREE_RIDE_NUM INTEGER,
-    TWENTY_THREE_ALIGHT_NUM INTEGER,
-         */
+ 
         KStream<String, JsonNode> plusRide = rawRideStream.mapValues(value -> {
             Integer SUM = value.get("payload").get("after").get("MIDNIGHT_RIDE_NUM").asInt();
             SUM += value.get("payload").get("after").get("ONE_RIDE_NUM").asInt();
@@ -188,39 +151,29 @@ public class App {
 
 
             System.out.println("SUM : " + SUM);
+            
             ObjectNode node = (ObjectNode) value.get("payload").get("after");
+
             node.put("SUM_OF_RIDE", SUM);
             node.put("SUM_OF_ALIGHT", SUM2);
-            
-            return node;
+            node.remove("BUS_ROUTE_NO");
 
+            node.remove("STND_BSST_ID");
+            node.remove("BSST_STA_NM");
+            
+            node.remove("MNTN_TYP_NM");
+            node.remove("WORK_DT");
+
+
+            return node;
+       
             
 
         });
-        plusRide.to("plusRide", Produced.with(Serdes.String(), jsonNodeSerde));
-
-
         
+        plusRide.to("test", Produced.with(Serdes.String(), jsonNodeSerde));
 
-        // Create a KTable from the modifiedStream, reduce duplicated data
-        // KTable<KeyValue<String, JsonNode>, JsonNode> modifiedTable = modifiedStream.groupBy((key, value) -> {
-        //     String mntn_typ_cd = value.get("MNTN_TYP_CD").toString();
-        //     ObjectMapper mapper = new ObjectMapper();
-        //     JsonNode node = mapper.createObjectNode().put("MNTN_TYP_NM", value.get("MNTN_TYP_NM").toString());
-        //     return   KeyValue.pair(mntn_typ_cd, node);
-        // }).
-        // .aggregate(
-        //     () -> "", // initial value
-        //     (key, value, aggregate) -> {
-        //          // value 값을 HashSet에 추가한 후,
-        // // HashSet을 다시 문자열로 변환하여 반환합니다.
-        // HashSet<String> set = new HashSet<>(Arrays.asList(aggregate));
-        // set.add(value.toString());
-        // return String.join(",", set);
-        //     }, // adder
-        //     (key, value, aggregate) -> "", // subtractor
-        //     "bustypestore" // state store name
-        // );
+
 
      
        
