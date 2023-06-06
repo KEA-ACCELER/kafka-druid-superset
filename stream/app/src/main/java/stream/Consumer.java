@@ -10,7 +10,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.Charset;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
@@ -51,7 +53,7 @@ public class Consumer {
         try (KafkaConsumer<String, JsonNode> consumer = new KafkaConsumer<>(consumerProps)) {
         
             consumer.subscribe(Collections.singletonList("dbserver1.seoulDB.busStation"));
-            consumer.seekToBeginning(consumer.assignment());
+            //consumer.seekToBeginning();
             Properties producerProps = new Properties();
             producerProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19094,localhost:29094,localhost:39094");
             producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
@@ -72,12 +74,26 @@ public class Consumer {
                     System.out.println("xcode After : "+xcode);
                     
                     // 좌표를 경위도로 변환
-                    String addr = coordToAddr(xcode, ycode);
-                    System.out.println("addr : "+addr);
+                    ArrayList<String> addr = coordToAddr(xcode, ycode);
+                    System.out.println("addr : "+addr.toString());
                     // 변환된 경위도를 레코드에 추가
-                    ((ObjectNode) record.value ().get ("payload").get ("after")).put ("addr", addr);
+                    ((ObjectNode) record.value ().get ("payload").get ("after")).put ("region_1depth_name", addr.get(0));
+                    ((ObjectNode) record.value ().get ("payload").get ("after")).put ("region_2depth_name", addr.get(1));
+                    ((ObjectNode) record.value ().get ("payload").get ("after")).put ("region_3depth_name", addr.get(2));
+
+
                     // 레코드를 outputTest으로 전송
-                    producer.send (new ProducerRecord<> ("output-topic" ,record.value()));
+
+// CREATE TABLE BusStation
+// (
+//   id          INT PRIMARY KEY AUTO_INCREMENT,
+//   bsst_ars_no VARCHAR(60),
+//   bus_sta_nm VARCHAR(60),
+//   gu VARCHAR(20),
+//   dong VARCHAR(20)
+// )
+                    
+                    producer.send (new ProducerRecord<> ("busStation" ,record.value()));
                     }
                     
                 }
@@ -90,13 +106,13 @@ public class Consumer {
       * 경위도 정보로 주소를 불러오는 메소드
       * @throws UnsupportedEncodingException 
       */
-      public static String coordToAddr(String longitude, String latitude){
+      public static ArrayList<String> coordToAddr(String longitude, String latitude){
         String url = "https://dapi.kakao.com/v2/local/geo/coord2address.json?x="+longitude+"&y="+latitude;
-        String addr = "";
+        ArrayList<String> addr = new ArrayList<String>();
         try{
            String jsondata = getJSONData(url);
            System.out.println("jsondata : "+jsondata);
-          addr = getRegionAddress(jsondata);
+          addr.addAll(getRegionAddress(jsondata));
           //LOGGER.info(addr);
         }catch(Exception e){
           System.out.println("주소 api 요청 에러");
@@ -153,8 +169,8 @@ public class Consumer {
     
      
 
-private static String getRegionAddress(String jsonString) {
-    String value = "";
+private static ArrayList<String> getRegionAddress(String jsonString) {
+    ArrayList<String> value = new ArrayList<String>();
 
     try {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -168,8 +184,10 @@ private static String getRegionAddress(String jsonString) {
             JsonNode subJobj = documentsNode.get(0);
             System.out.println("subJobj : " + subJobj);
             JsonNode subsubJobj = subJobj.get("address");
+            value.add(subsubJobj.get("region_1depth_name").asText());
+            value.add(subsubJobj.get("region_2depth_name").asText());
+            value.add(subsubJobj.get("region_3depth_name").asText());
 
-            value = subsubJobj.get("address_name").asText();
         }
     } catch (Exception e) {
         e.printStackTrace();
