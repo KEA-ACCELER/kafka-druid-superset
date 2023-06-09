@@ -8,3 +8,4 @@ RUN apt install openjdk-17-jdk -y
 # RUN unzip json-simple-1.1.jar.zip
 # build.gradle과 같은 폴더 안으로 옮기기
 
+RUN snap install gradle --classic 

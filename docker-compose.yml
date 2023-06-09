@@ -118,7 +118,7 @@ services:
 
   connector1: 
     build: 
-      context: ./connector
+      dockerfile: ./connector.Dockerfile
     ports:
         - 8083:8083 
     environment:
@@ -135,7 +135,7 @@ services:
 
   connector2: 
     build: 
-      context: ./connector
+      dockerfile: ./connector.Dockerfile
     ports:
         - 8084:8083 
     environment:
@@ -151,7 +151,7 @@ services:
   
   connector3: 
     build: 
-      context: ./connector
+      dockerfile: ./connector.Dockerfile
     ports:
         - 8085:8083 
     environment:
@@ -166,7 +166,7 @@ services:
       - kafka3
   
 
-  ######################################### DRUID #######################################333
+  ######################################### DRUID #######################################
   # Need 3.5 or later for container nodes
   postgres:
     container_name: postgres
@@ -270,7 +270,7 @@ services:
       - druid.env
 
 
-  ################################### KAFKA STREAMS #################################3
+  ################################### KAFKA STREAMS #################################
   ubuntu:
     build: 
       dockerfile: ./ubuntu.Dockerfile
@@ -280,3 +280,54 @@ services:
       - "8089:8089"
     volumes:
       - ./stream:/root/home/stream
+  
+  ################################### RAW DATA API #################################
+  node:
+    build:
+      dockerfile: ./node.Dockerfile
+    ports:
+      - 3000:3000
+    environment:
+      - MYSQL_DATABASE=seoulDB
+      - MYSQL_USER=root
+      - MYSQL_ROOT_PASSWORD=1234
+      - MYSQL_HOST=db
+      - API_KEY=${API_KEY}
+    depends_on:
+      raw-db : 
+        condition: service_healthy
+      target-db:
+        condition: service_healthy
+
+  ################################### DATABASES #################################
+  raw-db:
+    image: mysql:latest
+    environment:
+      - MYSQL_DATABASE=seoulDB
+      - MYSQL_ROOT_PASSWORD=1234
+    volumes:
+      - ./init.db:/docker-entrypoint-initdb.d
+    command :
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 2s
+      retries: 10
+
+  target-db:
+    image: mysql:latest
+    environment:
+      - MYSQL_DATABASE=seoulDB
+      - MYSQL_ROOT_PASSWORD=1234
+    volumes:
+      - ./init.db:/docker-entrypoint-initdb.d
+    command :
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 2s
+      retries: 10
