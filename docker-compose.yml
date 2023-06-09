@@ -288,11 +288,15 @@ services:
     ports:
       - 3000:3000
     environment:
-      - MYSQL_DATABASE=seoulDB
-      - MYSQL_USER=root
-      - MYSQL_ROOT_PASSWORD=1234
-      - MYSQL_HOST=db
-      - API_KEY=${API_KEY}
+      - RAW_MYSQL_DATABASE=seoulDB
+      - RAW_MYSQL_USER=root
+      - RAW_MYSQL_ROOT_PASSWORD=1234
+      - RAW_MYSQL_HOST=raw-db
+      - TARGET_MYSQL_DATABASE=seoulDB
+      - TARGET_MYSQL_USER=root
+      - TARGET_MYSQL_ROOT_PASSWORD=1234
+      - TARGET_MYSQL_HOST=target-db
+      - SEOUL_API_KEY=${API_KEY}
     depends_on:
       raw-db : 
         condition: service_healthy
@@ -306,7 +310,7 @@ services:
       - MYSQL_DATABASE=seoulDB
       - MYSQL_ROOT_PASSWORD=1234
     volumes:
-      - ./init.db:/docker-entrypoint-initdb.d
+      - ./init.db/raw:/docker-entrypoint-initdb.d
     command :
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
@@ -322,7 +326,7 @@ services:
       - MYSQL_DATABASE=seoulDB
       - MYSQL_ROOT_PASSWORD=1234
     volumes:
-      - ./init.db:/docker-entrypoint-initdb.d
+      - ./init.db/target:/docker-entrypoint-initdb.d
     command :
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
