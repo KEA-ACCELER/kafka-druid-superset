@@ -9,16 +9,74 @@ let STEP = 10;
 app.use(express.json());
 app.use(express.static('/app/front/build'));
 
+/**
+ * Trigger bus ride data api
+ * 
+ * Request Body
+ * {
+ *   "start_year": 2021,
+ *   "start_month": 1,
+ *   "end_year": 2021,
+ *   "end_month": 12
+ * }
+ */
 app.post('/api/bus-ride', (req, res) => {
-  busRide(req.body.year_list, req.body.month_list, () => {
-    res.send('bus ride api finished'); 
+  busRide(req.body.start_year, req.body.start_month, req.body.end_year, req.body.end_month, () => {
+    res.send('bus ride api finished');
   });
 })
 
+/**
+ * Trigger bus stop data api
+ */
 app.post('/api/bus-stop', (req, res) => {
   busStop(() => {
-    res.send('bus stop api finished'); 
+    res.send('bus stop api finished');
   });
+})
+
+/**
+ * Post raw-db mysql query
+ * 
+ * Request Body
+ * {
+ *  "query": "SELECT * FROM seoulRide"
+ * }
+ */
+app.post('/api/raw-db', async (req, res) => {
+  let connection = await mysql.createConnection({
+    host: process.env.RAW_MYSQL_HOST,
+    user: process.env.RAW_MYSQL_USER,
+    password: process.env.RAW_MYSQL_ROOT_PASSWORD,
+    database: process.env.RAW_MYSQL_DATABASE,
+    insecureAuth: true,
+  });
+  let results = await connection.query(
+    req.body.query
+  );
+  res.send(results);
+})
+
+/**
+ * Post tartget-db mysql query
+ * 
+ * Request Body
+ * {
+ * "query": "SELECT * FROM seoulRide"
+ * }
+ */
+app.post('/api/target-db', async (req, res) => {
+  let connection = await mysql.createConnection({
+    host: process.env.TARGET_MYSQL_HOST,
+    user: process.env.TARGET_MYSQL_USER,
+    password: process.env.TARGET_MYSQL_ROOT_PASSWORD,
+    database: process.env.TARGET_MYSQL_DATABASE,
+    insecureAuth: true,
+  });
+  let results = await connection.query(
+    req.body.query
+  );
+  res.send(results);
 })
 
 app.listen(port, () => {
@@ -26,31 +84,31 @@ app.listen(port, () => {
 })
 
 /**
- * Get Bus Ride, Alight Info
+ * Get bus rider data from Seoul Open API and store it in MySQL raw-db
  * 
  * META 
  * 공개 일자 | 2016.01.04.
  *
- * year_list, month_list example
- * year_list = [2021, 2022];
- * month_list = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"];
  */
-async function busRide(year_list, month_list, callback) {
+async function busRide(start_year, start_month, end_year, end_month, callback) {
   let connection = await mysql.createConnection({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_ROOT_PASSWORD,
-    database: process.env.MYSQL_DATABASE,
+    host: process.env.RAW_MYSQL_HOST,
+    user: process.env.RAW_MYSQL_USER,
+    password: process.env.RAW_MYSQL_ROOT_PASSWORD,
+    database: process.env.RAW_MYSQL_DATABASE,
     insecureAuth: true,
   });
 
-  for (let year of year_list) {
-    console.log("year: ", year);
-    for (let month of month_list) {
-      let page = 1;
+  // start from start_year, start_month and finish at end_year, end_month
+  for (var year = start_year; year <= end_year; year++) {
+    var month_start = (year === start_year) ? start_month : 1;
+    var month_end = (year === end_year) ? end_month : 12;
 
+    for (var month = month_start; month <= month_end; month++) {
+      console.log(year, month);
+      let page = 1;
       while (true) {
-        let url = "http://openapi.seoul.go.kr:8088/" + process.env.API_KEY + "/json/CardBusTimeNew/" + page + "/" + (page + STEP - 1) + "/" + year + '' + month;
+        let url = "http://openapi.seoul.go.kr:8088/" + process.env.SEOUL_API_KEY + "/json/CardBusTimeNew/" + page + "/" + (page + STEP - 1) + "/" + year + '' + month;
         let response = await axios.get(url);
         let body = response.data;
         console.log("body: ", body);
@@ -71,9 +129,9 @@ async function busRide(year_list, month_list, callback) {
       };
     }
   }
+
   callback();
 }
-
 
 /*
  *   Get Bus Stop Location Info
@@ -81,16 +139,16 @@ async function busRide(year_list, month_list, callback) {
  */
 async function busStop(callback) {
   let connection = await mysql.createConnection({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_ROOT_PASSWORD,
-    database: process.env.MYSQL_DATABASE,
+    host: process.env.RAW_MYSQL_HOST,
+    user: process.env.RAW_MYSQL_USER,
+    password: process.env.RAW_MYSQL_ROOT_PASSWORD,
+    database: process.env.RAW_MYSQL_DATABASE,
     insecureAuth: true,
   });
   let page = 1;
 
   while (true) {
-    let url = "http://openapi.seoul.go.kr:8088/" + process.env.API_KEY + "/json/busStopLocationXyInfo/" + page + "/" + (page + STEP - 1) + "/";
+    let url = "http://openapi.seoul.go.kr:8088/" + process.env.SEOUL_API_KEY + "/json/busStopLocationXyInfo/" + page + "/" + (page + STEP - 1) + "/";
 
     let response = await axios.get(url);
     let body = response.data;
