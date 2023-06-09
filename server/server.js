@@ -112,7 +112,7 @@ async function busRide(start_year, start_month, end_year, end_month, callback) {
         let response = await axios.get(url);
         let body = response.data;
         console.log("body: ", body);
-        if (body.CardBusTimeNew.RESULT.MESSAGE && body.CardBusTimeNew.RESULT.MESSAGE === "정상 처리되었습니다") {
+        if (body.CardBusTimeNew.RESULT.MESSAGE === undefined && body.CardBusTimeNew.RESULT.MESSAGE === "정상 처리되었습니다") {
           for (let element of body.CardBusTimeNew.row) {
             let results = await connection.query(
               "INSERT INTO seoulRide SET ?",
@@ -153,7 +153,7 @@ async function busStop(callback) {
     let response = await axios.get(url);
     let body = response.data;
     //console.log("body: ", body);
-    if (body.busStopLocationXyInfo.RESULT.MESSAGE && body.busStopLocationXyInfo.RESULT.MESSAGE === "정상 처리되었습니다") {
+    if (body.busStopLocationXyInfo.RESULT.MESSAGE === undefined && body.busStopLocationXyInfo.RESULT.MESSAGE === "정상 처리되었습니다") {
       //console.log("Response received", body);
       for (let element of body.busStopLocationXyInfo.row) {
         let results = await connection.query(

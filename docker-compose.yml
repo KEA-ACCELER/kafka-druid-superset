@@ -330,6 +330,7 @@ services:
     command :
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
+      - --secure-file-priv=/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
       interval: 10s
