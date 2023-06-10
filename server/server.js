@@ -21,8 +21,8 @@ app.use(express.static('/app/front/build'));
  * }
  */
 app.post('/api/bus-ride', (req, res) => {
-  busRide(req.body.start_year, req.body.start_month, req.body.end_year, req.body.end_month, () => {
-    res.send('bus ride api finished');
+  busRide(req.body.start_year, req.body.start_month, req.body.end_year, req.body.end_month, async (log) => {
+    res.send(log);
   });
 })
 
@@ -30,8 +30,8 @@ app.post('/api/bus-ride', (req, res) => {
  * Trigger bus stop data api
  */
 app.post('/api/bus-stop', (req, res) => {
-  busStop(() => {
-    res.send('bus stop api finished');
+  busStop(async (log) => {
+    res.send(log);
   });
 })
 
@@ -99,6 +99,7 @@ async function busRide(start_year, start_month, end_year, end_month, callback) {
     insecureAuth: true,
   });
 
+  let logs = [];
   // start from start_year, start_month and finish at end_year, end_month
   for (var year = start_year; year <= end_year; year++) {
     var month_start = (year === start_year) ? start_month : 1;
@@ -119,6 +120,9 @@ async function busRide(start_year, start_month, end_year, end_month, callback) {
               element
             );
             console.log(results);
+            if (page < STEP && year === start_year && month === start_month) {
+              logs.push(results);
+            }
           }
         }
         else {
@@ -126,11 +130,12 @@ async function busRide(start_year, start_month, end_year, end_month, callback) {
           break;
         }
         page += STEP;
+        if (page === STEP + 1 && year === start_year && month === start_month) {
+          callback(logs);
+        }
       };
     }
   }
-
-  callback();
 }
 
 /*
@@ -147,6 +152,7 @@ async function busStop(callback) {
   });
   let page = 1;
 
+  let logs = [];
   while (true) {
     let url = "http://openapi.seoul.go.kr:8088/" + process.env.SEOUL_API_KEY + "/json/busStopLocationXyInfo/" + page + "/" + (page + STEP - 1) + "/";
 
@@ -161,6 +167,9 @@ async function busStop(callback) {
           element
         );
         console.log(results);
+        if (page < STEP) {
+          logs.push(results);
+        }
       }
     }
     else {
@@ -168,6 +177,8 @@ async function busStop(callback) {
       break;
     }
     page += STEP;
+    if (page === STEP + 1) {
+      callback(logs);
+    }
   }
-  callback();
 }
