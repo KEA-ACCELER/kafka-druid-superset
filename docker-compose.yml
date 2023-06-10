@@ -287,6 +287,7 @@ services:
       dockerfile: ./node.Dockerfile
     ports:
       - 3000:3000
+    restart: always
     environment:
       - RAW_MYSQL_DATABASE=seoulDB
       - RAW_MYSQL_USER=root
