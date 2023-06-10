@@ -1,11 +1,17 @@
 import { useState } from "react";
 import { Button } from "react-bootstrap";
+import { postQueryTarget } from "../services/api";
 
 export const Target = () => {
     const [res, setRes] = useState("");
     const [query, setQuery] = useState("");
 
-    const requestHandler = () => {};
+    const requestHandler = async () => {
+        const body = {
+            query: query,
+        };
+        setRes(await postQueryTarget(body));
+    };
 
     return (
         <div className="Target">

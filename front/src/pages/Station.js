@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { Button } from "react-bootstrap";
+import { getBusStop } from "../services/api";
 
 export const Station = () => {
     const [res, setRes] = useState("");
 
-    const requestHandler = () => {};
+    const requestHandler = async () => {
+        setRes(await getBusStop());
+    };
+
     return (
         <div className="Station">
             <h1>Station </h1>

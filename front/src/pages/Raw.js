@@ -1,11 +1,17 @@
 import { useState } from "react";
 import { Button } from "react-bootstrap";
+import { postQueryRaw } from "../services/api";
 
 export const Raw = () => {
     const [res, setRes] = useState("");
     const [query, setQuery] = useState("");
 
-    const requestHandler = () => {};
+    const requestHandler = async () => {
+        const body = {
+            query: query,
+        };
+        setRes(await postQueryRaw(body));
+    };
     return (
         <div className="Raw">
             <h1>Raw-DB</h1>

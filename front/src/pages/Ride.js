@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "react-bootstrap";
+import { getBusRide } from "../services/api";
 
 export const Ride = () => {
     const [res, setRes] = useState("");
@@ -8,7 +9,16 @@ export const Ride = () => {
     const [endY, setEndY] = useState("");
     const [endM, setEndM] = useState("");
 
-    const requestHandler = () => {};
+    const requestHandler = async () => {
+        const body = {
+            start_year: startY,
+            start_month: startM,
+            end_year: endY,
+            end_month: endM,
+        };
+        setRes(await getBusRide(body));
+    };
+
     return (
         <div className="Ride">
             <h1>Ride</h1>
