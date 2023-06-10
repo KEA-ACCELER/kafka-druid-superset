@@ -14,10 +14,10 @@ app.use(express.static('/app/front/build'));
  * 
  * Request Body
  * {
- *   "start_year": "2021",
- *   "start_month": "01",
- *   "end_year": "2021",
- *   "end_month": "12"
+ *   "start_year": 2021,
+ *   "start_month": 1,
+ *   "end_year": 2021,
+ *   "end_month": 12
  * }
  */
 app.post('/api/bus-ride', (req, res) => {
@@ -108,7 +108,7 @@ async function busRide(start_year, start_month, end_year, end_month, callback) {
       console.log(year, month);
       let page = 1;
       while (true) {
-        let url = "http://openapi.seoul.go.kr:8088/" + process.env.SEOUL_API_KEY + "/json/CardBusTimeNew/" + page + "/" + (page + STEP - 1) + "/" + year + '' + month;
+        let url = "http://openapi.seoul.go.kr:8088/" + process.env.SEOUL_API_KEY + "/json/CardBusTimeNew/" + page + "/" + (page + STEP - 1) + "/" + year + (month >= 10 ? '' : '0') + month;
         let response = await axios.get(url);
         let body = response.data;
         console.log("body: ", body);
